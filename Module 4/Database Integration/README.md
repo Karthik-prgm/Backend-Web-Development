@@ -1,21 +1,35 @@
-# Database Integration Assignment Starter
+# Database Integration
 
-Replace the in-memory repository implementation with PostgreSQL through Prisma. The starter already uses an asynchronous repository contract so services and controllers can remain stable during the swap.
+The posts repository now uses PostgreSQL through Prisma. Services and controllers continue to use the existing repository contract and do not import Prisma.
 
-## Run
+## Setup (PowerShell or CMD)
 
-```bash
+1. Install PostgreSQL and create a database named `community_dev`.
+2. Copy `.env.example` to `.env` and replace the sample password locally. Never commit `.env`.
+3. Install dependencies and generate Prisma Client:
+
+```sh
 npm install
-npm start
-```
-
-## Prisma preparation
-
-Copy `.env.example` to `.env` with a local PostgreSQL URL. The schema is intentionally incomplete for the assignment.
-
-```bash
-npm run prisma:format
+npm run prisma:generate
 npm run prisma:validate
 ```
 
-Read the platform question before editing. Do not add platform-only `question.md`, answer files, tests, or specs to this repository. Never commit `.env` or real credentials.
+4. Apply the committed migration (do not use `db push`):
+
+```sh
+npm run prisma:deploy
+npm run db:seed
+npm start
+```
+
+For local schema development, use `npm run prisma:migrate -- --name descriptive_name`. To recreate a disposable local database, drop and recreate only the local `community_dev` database, then run `npm run prisma:deploy` and `npm run db:seed`. Do not reset shared or production databases.
+
+## Repository contract
+
+- `findAll()` returns an array, including `[]` when empty.
+- `findById(id)` returns a post or `null`.
+- `create(fields)` returns the created post in the legacy API shape.
+- `update(id, patch)` returns the updated post or `null`.
+- `remove(id)` returns `true` or `false`.
+
+The schema includes users, posts, comments, votes, follows, tags, and the post/tag join table. Foreign-key deletion behavior, unique relationship constraints, and lookup indexes are explicit.
