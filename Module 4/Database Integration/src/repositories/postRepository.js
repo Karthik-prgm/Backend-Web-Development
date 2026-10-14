@@ -11,6 +11,11 @@ function toPostRecord(post) {
   };
 }
 
+function toValidId(id) {
+  const numericId = Number(id);
+  return Number.isSafeInteger(numericId) && numericId > 0 ? numericId : null;
+}
+
 function translateConstraintError(error) {
   if (error && (error.code === 'P2002' || error.code === 'P2003' || error.code === 'P2014')) {
     const conflict = new Error(
@@ -30,17 +35,25 @@ async function findAll() {
 }
 
 async function findById(id) {
-  const post = await prisma.post.findUnique({ where: { id: Number(id) } });
+  const numericId = toValidId(id);
+  if (numericId === null) return null;
+  const post = await prisma.post.findUnique({ where: { id: numericId } });
   return toPostRecord(post);
 }
 
 async function create(fields) {
   try {
+    const authorId = fields.authorId == null ? null : Number(fields.authorId);
+    if (authorId !== null && (!Number.isSafeInteger(authorId) || authorId < 1)) {
+      const conflict = new Error('The referenced record does not exist or is still in use');
+      conflict.statusCode = 409;
+      throw conflict;
+    }
     const post = await prisma.post.create({
       data: {
         title: fields.title,
         body: fields.body || '',
-        authorId: fields.authorId == null ? null : Number(fields.authorId),
+        authorId,
       },
     });
     return toPostRecord(post);
@@ -50,7 +63,8 @@ async function create(fields) {
 }
 
 async function update(id, patch) {
-  const numericId = Number(id);
+  const numericId = toValidId(id);
+  if (numericId === null) return null;
   const data = {};
   if (patch.title !== undefined) data.title = patch.title;
   if (patch.body !== undefined) data.body = patch.body;
@@ -64,7 +78,9 @@ async function update(id, patch) {
 }
 
 async function remove(id) {
-  const result = await prisma.post.deleteMany({ where: { id: Number(id) } });
+  const numericId = toValidId(id);
+  if (numericId === null) return false;
+  const result = await prisma.post.deleteMany({ where: { id: numericId } });
   return result.count > 0;
 }
 
