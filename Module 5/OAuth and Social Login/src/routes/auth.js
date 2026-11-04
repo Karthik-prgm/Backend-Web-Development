@@ -37,9 +37,9 @@ router.get(
     failureRedirect: '/auth/failure',
   }),
   (req, res) => {
-    // req.user is the user returned by verifyCallback
-    // Issue YOUR app JWT here and return it as JSON.
-    res.json({ error: 'not implemented' }); // remove this line when you implement
+    // Issue the application's JWT; Google's access token is never exposed.
+    const token = signToken({ sub: req.user.id, role: req.user.role });
+    res.json({ token });
   },
 );
 
